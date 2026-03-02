@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Visitor Camera</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Camera</title>
 
 <style>
 body{
   font-family:Arial;
-  background:#f5f7fa;
   text-align:center;
   padding:20px;
 }
@@ -15,87 +14,99 @@ body{
 video,img{
   width:100%;
   max-width:400px;
-  border:2px solid #1976d2;
+  border:2px solid #333;
   border-radius:8px;
 }
 
 button{
-  margin-top:12px;
+  margin-top:10px;
   padding:10px 20px;
-  background:#1976d2;
-  color:white;
-  border:none;
-  border-radius:5px;
-  cursor:pointer;
-  font-size:14px;
+  font-size:16px;
 }
 </style>
 </head>
 
 <body>
 
-<h3>Capture Visitor Photo</h3>
+<h3>Visitor Camera</h3>
 
-<video id="video" autoplay></video>
-<canvas id="canvas" style="display:none"></canvas>
-<img id="photo" style="display:none">
+<video id="video" autoplay playsinline></video>
+<img id="preview" style="display:none">
 
 <br>
 
-<button onclick="takePhoto()">📸 Capture</button>
-<button onclick="sendPhoto()">✅ Use Photo</button>
+<button id="capBtn">📷 Capture</button>
+<button id="useBtn" style="display:none">✅ Use Photo</button>
 
-<p id="msg"></p>
+<canvas id="canvas" style="display:none"></canvas>
 
 <script>
 
 const video = document.getElementById("video");
-const canvas = document.getElementById("canvas");
-const photo = document.getElementById("photo");
-const msg = document.getElementById("msg");
+const preview = document.getElementById("preview");
+const capBtn = document.getElementById("capBtn");
+const useBtn = document.getElementById("useBtn");
 
-navigator.mediaDevices.getUserMedia({video:true})
-.then(stream=>{
-  video.srcObject = stream;
-})
-.catch(err=>{
-  msg.innerText="Camera Error: "+err.message;
-});
+let finalImg = "";
 
-/* Capture */
-function takePhoto(){
+async function startCam(){
+
+  try{
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video:true,
+      audio:false
+    });
+
+    video.srcObject = stream;
+    await video.play();
+
+  }catch(e){
+
+    alert("Camera Permission Required");
+    console.log(e);
+  }
+}
+
+startCam();
+
+/* CAPTURE */
+capBtn.onclick = ()=>{
+
+  const canvas = document.getElementById("canvas");
 
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
 
-  canvas.getContext("2d")
-    .drawImage(video,0,0);
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video,0,0);
 
-  const data = canvas.toDataURL("image/png");
+  finalImg = canvas.toDataURL("image/png");
 
-  photo.src = data;
-  photo.style.display="block";
+  preview.src = finalImg;
+  preview.style.display="block";
   video.style.display="none";
 
-  window.capturedPhoto = data;
+  capBtn.style.display="none";
+  useBtn.style.display="inline-block";
 }
 
-/* Send Back */
-function sendPhoto(){
+/* SEND BACK */
+useBtn.onclick = ()=>{
 
-  if(!window.capturedPhoto){
-    alert("Capture photo first");
-    return;
+  if(window.opener){
+
+    window.opener.postMessage({
+      type:"VMS_PHOTO",
+      data: finalImg
+    },"*");
+
   }
-
-  window.opener.postMessage({
-    type:"visitorPhoto",
-    data:window.capturedPhoto
-  },"*");
 
   window.close();
 }
 
 </script>
+
 </body>
 </html>
