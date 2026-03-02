@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Visitor Camera</title>
+
+<style>
+body{
+  font-family:Arial;
+  background:#f5f7fa;
+  text-align:center;
+  padding:20px;
+}
+
+video,img{
+  width:100%;
+  max-width:400px;
+  border:2px solid #1976d2;
+  border-radius:8px;
+}
+
+button{
+  margin-top:12px;
+  padding:10px 20px;
+  background:#1976d2;
+  color:white;
+  border:none;
+  border-radius:5px;
+  cursor:pointer;
+  font-size:14px;
+}
+</style>
+</head>
+
+<body>
+
+<h3>Capture Visitor Photo</h3>
+
+<video id="video" autoplay></video>
+<canvas id="canvas" style="display:none"></canvas>
+<img id="photo" style="display:none">
+
+<br>
+
+<button onclick="takePhoto()">📸 Capture</button>
+<button onclick="sendPhoto()">✅ Use Photo</button>
+
+<p id="msg"></p>
+
+<script>
+
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const photo = document.getElementById("photo");
+const msg = document.getElementById("msg");
+
+navigator.mediaDevices.getUserMedia({video:true})
+.then(stream=>{
+  video.srcObject = stream;
+})
+.catch(err=>{
+  msg.innerText="Camera Error: "+err.message;
+});
+
+/* Capture */
+function takePhoto(){
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  canvas.getContext("2d")
+    .drawImage(video,0,0);
+
+  const data = canvas.toDataURL("image/png");
+
+  photo.src = data;
+  photo.style.display="block";
+  video.style.display="none";
+
+  window.capturedPhoto = data;
+}
+
+/* Send Back */
+function sendPhoto(){
+
+  if(!window.capturedPhoto){
+    alert("Capture photo first");
+    return;
+  }
+
+  window.opener.postMessage({
+    type:"visitorPhoto",
+    data:window.capturedPhoto
+  },"*");
+
+  window.close();
+}
+
+</script>
+</body>
+</html>
