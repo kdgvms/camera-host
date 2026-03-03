@@ -48,28 +48,62 @@ const capBtn = document.getElementById("capBtn");
 const useBtn = document.getElementById("useBtn");
 
 let finalImg = "";
-
+  
 async function startCam(){
 
   try{
 
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video:true,
-      audio:false
-    });
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    let constraints = {
+      audio: false,
+      video: true
+    };
+
+    // 📱 Mobile → Back Camera
+    if(isMobile){
+      constraints.video = {
+        facingMode: { exact: "environment" }
+      };
+    }
+
+    let stream;
+
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+    }
+    catch(err){
+
+      // 🔁 Fallback if exact back cam not supported
+      if(isMobile){
+
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false
+        });
+
+      } else {
+
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false
+        });
+      }
+    }
 
     video.srcObject = stream;
     await video.play();
 
-  }catch(e){
+  }
+  catch(e){
 
     alert("Camera Permission Required");
     console.log(e);
   }
 }
 
-startCam();
-
+startCam()
+  
 /* CAPTURE */
 capBtn.onclick = ()=>{
 
@@ -110,3 +144,4 @@ useBtn.onclick = ()=>{
 
 </body>
 </html>
+
